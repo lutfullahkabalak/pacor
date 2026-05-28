@@ -1,7 +1,12 @@
-# Portainer Stack deploy
-# Repository: https://github.com/lutfullahkabalak/pacor
+# Portainer production stack — GHCR image'larini ceker (build yok).
+# Tek domain: nginx disari acik; / -> frontend, /api/ -> backend proxy.
+#
+# Portainer > Stacks > Repository:
+#   https://github.com/lutfullahkabalak/pacor
 # Compose path: docker-compose.portainer.yml
-# Ortam degiskenlerini .env.example dosyasindan Portainer stack editor'e ekleyin.
+#
+# GHCR private ise Portainer > Registries'e ekleyin:
+#   URL: ghcr.io | Username: lutfullahkabalak | Password: GitHub PAT (read:packages)
 
 name: pacor
 
@@ -24,9 +29,8 @@ services:
       - pacor
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/lutfullahkabalak/pacor-backend:${IMAGE_TAG:-latest}
+    pull_policy: always
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-oruc}:${POSTGRES_PASSWORD:-oruc}@db:5432/${POSTGRES_DB:-oruc}?sslmode=disable
@@ -34,6 +38,8 @@ services:
       PORT: "8080"
       SESSION_GAP_MINUTES: ${SESSION_GAP_MINUTES:-30}
       JWT_EXPIRY_HOURS: ${JWT_EXPIRY_HOURS:-168}
+    ports:
+      - "${BACKEND_PORT:-5844}:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -46,13 +52,12 @@ services:
     networks:
       - pacor
 
-  web:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+  nginx:
+    image: ghcr.io/lutfullahkabalak/pacor-nginx:${IMAGE_TAG:-latest}
+    pull_policy: always
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "${HTTP_PORT:-5843}:80"
     depends_on:
       backend:
         condition: service_healthy

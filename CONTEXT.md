@@ -1,4 +1,4 @@
-# Proje Bağlamı — Aralıklı Oruç
+# Proje Bağlamı — Pacor (Aralıklı Oruç)
 
 > **AGENT TALİMATI:** Bu dosyayı ilk oku. Görevi anlamak, mimariyi kavramak ve nerede ne değiştireceğine karar vermek için **yalnızca bu dosyayı kullan**. Başka dosyaları tarama, glob/grep/read yapma — ancak gerçekten kod yazacak veya hata ayıklayacaksan ve ihtiyacın olan bilgi burada yoksa ilgili tek dosyayı aç. Kullanıcı uygulamanın mevcut halinden memnun; gereksiz refactor veya kapsam genişletmesi yapma. Süreç kuralları için `INSTRUCTIONS.md`'ye uy.
 
@@ -6,23 +6,37 @@
 
 ## Ne bu?
 
-Mobil öncelikli aralıklı oruç takip uygulaması. Kullanıcı **"Yedim"** butonuna basarak yeme anını loglar; sistem oturumlar arası süreyi oruç olarak hesaplar. Çoklu kullanıcı, basit **kullanıcı adı + PIN** ile giriş. Arayüz Türkçe.
+**Pacor**, mobil öncelikli bir **aralıklı oruç (intermittent fasting) takip uygulamasıdır**. Kullanıcı **"Yedim"** butonuna basarak yeme anını loglar; sistem oturumlar arası süreyi oruç olarak hesaplar. Çoklu kullanıcı, basit **kullanıcı adı + PIN** ile giriş. Arayüz Türkçe.
 
-**Stack:** Go (Chi, pgx, JWT, bcrypt) + Vue 3 (Vite, Pinia, Vue Router, Tailwind v4)
+**GitHub:** [lutfullahkabalak/pacor](https://github.com/lutfullahkabalak/pacor)
+
+**Stack:** Go (Chi, pgx, JWT, bcrypt) + Vue 3 (Vite, Pinia, Vue Router, Tailwind v4) + PostgreSQL + nginx
 
 ---
 
 ## Çalıştırma
 
-```bash
-# Docker (db + backend)
-docker compose up --build
+### Lokal geliştirme (Docker — tam stack)
 
-# Manuel backend
+```bash
+cp .env.example .env   # opsiyonel; varsayılan portlar: nginx 5843, backend 5844
+docker compose up --build
+```
+
+| Servis | Adres |
+|--------|-------|
+| UI + API (nginx) | http://localhost:5843 |
+| API doğrudan (dev) | http://localhost:5844 |
+| Health | GET http://localhost:5843/health |
+
+### Lokal geliştirme (manuel)
+
+```bash
+# Backend
 cd backend && cp .env.example .env
 DATABASE_URL=postgres://oruc:oruc@localhost:5432/oruc?sslmode=disable go run ./cmd/server/
 
-# Manuel frontend
+# Frontend
 cd frontend && cp .env.example .env
 npm install && npm run dev
 ```
@@ -30,42 +44,63 @@ npm install && npm run dev
 | Servis | Adres |
 |--------|-------|
 | API | http://localhost:8080 |
-| UI | http://localhost:5173 |
+| UI (Vite dev) | http://localhost:5173 |
 | Health | GET /health |
 
 **Test:** `cd backend && go test ./...` · **Build:** `cd frontend && npm run build`
 
 ---
 
+## Deploy (Portainer + GHCR)
+
+**Production compose:** `docker-compose.portainer.yml` — kaynak kod **build etmez**, GitHub Actions ile üretilen image'ları çeker.
+
+| Image | GHCR |
+|-------|------|
+| Backend | `ghcr.io/lutfullahkabalak/pacor-backend:latest` |
+| nginx (Vue SPA + reverse proxy) | `ghcr.io/lutfullahkabalak/pacor-nginx:latest` |
+
+**Portainer:** Stack → Git repo → compose path: `docker-compose.portainer.yml`
+
+**Varsayılan host portları:** nginx `5843`, backend `5844` (opsiyonel doğrudan API)
+
+**Tek domain mimarisi:** Dışarıya yalnızca **nginx** açılır. nginx `/` → Vue static, `/api/` → `backend:8080` proxy. Cloudflare Tunnel için `http://localhost:5843` veya container içi `http://nginx:80` yeterli.
+
+**CI/CD:**
+- `.github/workflows/ci.yml` — test + build doğrulama
+- `.github/workflows/publish.yml` — `main` push'ta GHCR'a image publish
+
+**nginx config:** `nginx/default.conf` · **nginx image build:** `frontend/Dockerfile` (Node build → `nginx:alpine`)
+
+---
+
 ## Dizin yapısı
 
 ```
-aralıklıoruç/
-├── CONTEXT.md          ← bu dosya (tek kaynak)
-├── INSTRUCTIONS.md     ← agent süreç kuralları
-├── docker-compose.yml  ← postgres + backend (frontend yok)
+pacor/
+├── CONTEXT.md                    ← bu dosya (agent tek kaynak)
+├── README.md                     ← insan + SEO / AI SEO dokümantasyonu
+├── INSTRUCTIONS.md               ← agent süreç kuralları
+├── docker-compose.yml            ← lokal dev (build)
+├── docker-compose.portainer.yml  ← production (GHCR pull)
+├── .env.example                  ← Portainer / compose env şablonu
+├── nginx/default.conf            ← tek domain SPA + API proxy
+├── .github/workflows/            ← ci.yml, publish.yml
 ├── backend/
-│   ├── cmd/server/main.go       ← router, CORS, route tanımları
-│   ├── internal/
-│   │   ├── auth/                ← JWT üret/parse, Bearer middleware
-│   │   ├── config/config.go     ← env okuma
-│   │   ├── database/            ← pgx pool + embed migration
-│   │   ├── users/               ← kayıt/giriş, plan CRUD
-│   │   └── meals/               ← yemek log, istatistik, handler
+│   ├── cmd/server/main.go
+│   ├── internal/auth|config|database|users|meals/
 │   ├── Dockerfile
 │   └── .env.example
 └── frontend/
-    ├── src/
-    │   ├── api/client.ts        ← tüm API çağrıları
-    │   ├── stores/              ← auth, meals, settings (Pinia)
-    │   ├── views/               ← Login, Home, Stats, Settings
-    │   ├── components/          ← FastingTimer, MealButton, BottomNav, ...
-    │   ├── router/index.ts
-    │   └── types/index.ts
+    ├── Dockerfile                ← Vue build + nginx image
+    ├── src/api/client.ts
+    ├── src/stores/               ← auth, meals, settings, theme
+    ├── src/views/                ← LoginView, HomeView
+    ├── src/components/           ← MealButton, StatsModal, SettingsModal, ...
     └── .env.example
 ```
 
-**Not:** Aktif migration `backend/internal/database/migrations/001_init.sql`. `backend/migrations/` eski kopya, kullanılmıyor.
+**Not:** Aktif migration'lar `backend/internal/database/migrations/`. `backend/migrations/` eski kopya, kullanılmıyor.
 
 ---
 
@@ -74,14 +109,16 @@ aralıklıoruç/
 | Tablo | Alanlar |
 |-------|---------|
 | `users` | id, username (unique), pin_hash, created_at |
-| `user_settings` | user_id PK, plan_type, eating_hours, fasting_hours, updated_at |
+| `user_settings` | user_id PK, plan_type, eating_hours, fasting_hours, **fasting_minutes**, updated_at |
 | `meal_logs` | id, user_id, logged_at, note |
 
-Varsayılan plan: `16_8` → eating=8, fasting=16.
+Varsayılan plan: `16_8` → eating=8, fasting=16, fasting_minutes=0.
 
 ---
 
 ## API (tümü `/api` altında)
+
+Production'da nginx üzerinden same-origin: `/api/...`. Dev'de frontend `VITE_API_URL=http://localhost:8080`.
 
 ### Auth (korumasız)
 | Method | Path | Body | Dönüş |
@@ -101,7 +138,8 @@ PIN min 4 hane, bcrypt hash. JWT varsayılan 7 gün (`JWT_EXPIRY_HOURS`).
 | GET | `/stats/weekly?end=` | 7 günlük özet |
 | GET | `/state` | Anlık durum: son yemekten beri süre + bugün özeti |
 | GET | `/settings/plan` | Plan oku |
-| PUT | `/settings/plan` | Plan güncelle `{plan_type, eating_hours, fasting_hours}` |
+| PUT | `/settings/plan` | Plan güncelle `{plan_type, eating_hours, fasting_hours, fasting_minutes}` |
+| PUT | `/settings/pin` | PIN değiştir `{current_pin, new_pin}` |
 
 ---
 
@@ -111,8 +149,7 @@ PIN min 4 hane, bcrypt hash. JWT varsayılan 7 gün (`JWT_EXPIRY_HOURS`).
 - **Oruç:** Oturumlar arası boşluk = oruç süresi.
 - **Tek dokunuş yeme süresi:** Oturumda tek kayıt varsa min 15 dk yeme sayılır.
 - **Plan durumu (`plan_status`):** `green` / `yellow` / `red` / `gray`
-  - Yeme süresi ≤ hedef eating_hours
-  - En uzun oruç (veya bugünkü current fast) ≥ hedef fasting_hours
+- **Hedef süre:** `fasting_hours * 60 + fasting_minutes`
 - Saf fonksiyonlar unit testli: `backend/internal/meals/stats_test.go`
 
 ---
@@ -122,46 +159,45 @@ PIN min 4 hane, bcrypt hash. JWT varsayılan 7 gün (`JWT_EXPIRY_HOURS`).
 ### Rotalar
 | Path | View | İçerik |
 |------|------|--------|
-| `/login` | LoginView | Kayıt/giriş, PIN input |
-| `/` | HomeView | Oruç sayacı, **Yedim** butonu, bugün özeti |
-| `/stats` | StatsView | Son 7 gün bar listesi, ortalamalar |
-| `/settings` | SettingsView | Plan seçimi, son kayıtlar sil, çıkış |
+| `/login` | LoginView | Kayıt/giriş |
+| `/` | HomeView | Oruç sayacı, **Yedim** butonu, ayarlar/istatistik modalları |
+| `/stats`, `/settings` | — | `home`'a redirect (modal kullanılıyor) |
 
 ### Pinia store'lar
-- **auth** — token/username localStorage'da, login/register/logout
-- **meals** — state, logMeal, weekly, recent meals, deleteMeal
-- **settings** — plan fetch/save, presetler (16_8, 18_6, 20_4)
+- **auth** — token/username localStorage
+- **meals** — state, logMeal, weekly, deleteMeal; StatsModal
+- **settings** — plan fetch/save, PIN değiştir; SettingsModal
+- **theme** — sistem açık/koyu tema
 
-### Bileşenler
-`FastingTimer` (canlı sayaç) · `MealButton` · `TodaySummary` · `PlanPicker` · `BottomNav`
+### Önemli bileşenler
+`MealButton` · `StatsModal` · `SettingsModal` · `PlanPicker` · `StatsFab` · `FoodEmojiBackground` · `PacManIcon`
 
-### Env
-- Backend: `DATABASE_URL`, `JWT_SECRET`, `PORT`, `SESSION_GAP_MINUTES`
-- Frontend: `VITE_API_URL` (default `http://localhost:8080`)
+### API client
+- Dev: `VITE_API_URL` veya `http://localhost:8080`
+- Prod: same-origin (`import.meta.env.PROD ? '' : ...`) — nginx `/api/` proxy ile uyumlu
 
 ### CORS
-Sadece `localhost:5173` ve `127.0.0.1:5173`. Telefondan LAN IP ile erişimde CORS güncellemesi gerekir (`main.go`).
+Dev Vite için `localhost:5173` / `127.0.0.1:5173`. Production nginx same-origin olduğu için tarayıcı CORS sorunu yok.
 
 ---
 
-## Bilinçli olarak yok (plan dışı / sonraki adım)
+## Bilinçli olarak yok (plan dışı)
 
-Push bildirimi, PWA/offline, grafik kütüphanesi, kalori/fotoğraf, admin paneli, SQLite, login rate limit, istatistikte günlük/haftalık tab ayrımı, gerçek numpad UI, CI pipeline, kök README.
+Push bildirimi, PWA/offline, kalori/fotoğraf, admin paneli, SQLite, login rate limit, ayrı `/stats` ve `/settings` sayfaları.
 
 ---
 
-## Bilinen eksikler (kullanıcı mevcut hali onayladı — dokunma unless asked)
+## Bilinen eksikler (dokunma unless asked)
 
 1. Login rate limit yok
-2. `/stats/daily` API var, UI'da ayrı günlük tab yok (bugün ana ekranda)
-3. Mobil LAN erişimi için CORS kısıtlı
-4. `tasks/todo.md` ve `tasks/lessons.md` henüz yok (`INSTRUCTIONS.md` gereksinimi)
+2. Mobil LAN erişimi için CORS kısıtlı (dev)
+3. `tasks/todo.md` ve `tasks/lessons.md` henüz yok
 
 ---
 
 ## Agent süreci (kısa)
 
-`INSTRUCTIONS.md` kurallarına uy: plan önce, doğrulama kanıtla, sadelik, otomatik hata düzeltme. Görev takibi için `tasks/todo.md` + `tasks/lessons.md` kullanılmalı (henüz oluşturulmadı).
+`INSTRUCTIONS.md` kurallarına uy. Görev takibi için `tasks/todo.md` + `tasks/lessons.md` kullanılmalı (henüz oluşturulmadı).
 
 ---
 
@@ -170,10 +206,13 @@ Push bildirimi, PWA/offline, grafik kütüphanesi, kalori/fotoğraf, admin panel
 | Durum | Açılacak dosya |
 |-------|----------------|
 | Route/handler ekle | `backend/cmd/server/main.go` |
+| nginx / tek domain | `nginx/default.conf`, `frontend/Dockerfile` |
+| Deploy / Portainer | `docker-compose.portainer.yml`, `.env.example` |
+| CI / image publish | `.github/workflows/` |
 | İstatistik mantığı | `backend/internal/meals/stats.go` |
 | Auth değişikliği | `backend/internal/auth/`, `backend/internal/users/` |
 | Yeni API çağrısı | `frontend/src/api/client.ts` + ilgili store |
-| UI ekranı | `frontend/src/views/*.vue` |
+| UI ekranı / modal | `frontend/src/views/*.vue`, `frontend/src/components/*.vue` |
 | Migration | `backend/internal/database/migrations/` |
 
 Bunun dışında tarama yapma.
