@@ -47,7 +47,7 @@ async function handleMeal() {
           <div class="w-9 h-9 shrink-0" aria-hidden="true">
             <PacManIcon head-only />
           </div>
-          <h1 class="text-xl font-semibold tracking-tight">Pacor</h1>
+          <h1 class="app-title text-xl tracking-tight">Pacor</h1>
         </div>
         <button
           type="button"
@@ -64,7 +64,6 @@ async function handleMeal() {
 
       <div class="flex-1 flex flex-col items-center justify-center gap-8 w-full">
         <section class="w-full py-2">
-          
           <p class="fasting-elapsed">{{ display }}</p>
         </section>
 
