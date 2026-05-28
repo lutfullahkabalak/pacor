@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    pin_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    plan_type VARCHAR(20) NOT NULL DEFAULT '16_8',
+    eating_hours INTEGER NOT NULL DEFAULT 8,
+    fasting_hours INTEGER NOT NULL DEFAULT 16,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS meal_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    logged_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    note TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_meal_logs_user_logged_at ON meal_logs(user_id, logged_at DESC);

@@ -1,0 +1,1 @@
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS fasting_minutes INTEGER NOT NULL DEFAULT 0;

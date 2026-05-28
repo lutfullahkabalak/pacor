@@ -1,0 +1,17 @@
+<svg width="100%" viewBox="0 0 680 400" role="img" xmlns="http://www.w3.org/2000/svg" style="max-width: 680px; display: block; margin-inline: auto;">
+  <title>Pac-Man</title>
+  <desc>Sarı Pac-Man sağa bakıyor, ağzı açık, önünde iki kırmızı nokta var</desc>
+
+  <!-- Pac-Man merkezi: 240,200, yarıçap: 140 -->
+  <!-- Ağız sağa açık: üst çene 330deg, alt çene 30deg (yani 60 derece açıklık) -->
+  <!-- upper jaw point: 140*cos(330°)=121, 140*sin(330°)=-70 -->
+  <!-- lower jaw point: 140*cos(30°)=121, 140*sin(30°)=70 -->
+  <path d="M240,200 L361,130 A140,140 0 1,0 361,270 Z" fill="#F5C842"></path>
+
+  <!-- Göz: sağ üst bölgede -->
+  <circle cx="215" cy="145" r="14" fill="#444"></circle>
+
+  <!-- Noktalar: sağda, ağzın hizasında -->
+  <circle cx="430" cy="190" r="22" fill="#F5C842"></circle>
+  <circle cx="495" cy="190" r="22" fill="#F5C842"></circle>
+</svg>
