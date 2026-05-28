@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterView } from 'vue-router'
-import FoodEmojiBackground from './components/FoodEmojiBackground.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import StatsFab from './components/StatsFab.vue'
 import StatsModal from './components/StatsModal.vue'
@@ -12,7 +11,7 @@ const showChrome = computed(() => auth.isAuthenticated)
 </script>
 
 <template>
-  <FoodEmojiBackground />
+  <div class="page-bg" aria-hidden="true" />
   <div class="relative z-[1] min-h-dvh">
     <RouterView />
     <StatsModal />

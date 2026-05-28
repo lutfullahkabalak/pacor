@@ -19,9 +19,11 @@
 ### Lokal geliştirme (Docker — tam stack)
 
 ```bash
-cp .env.example .env   # opsiyonel; varsayılan portlar: nginx 5843, backend 5844
+cp .env.example .env   # opsiyonel; varsayılan portlar: nginx 5843, backend 5844, Postgres host 5433
 docker compose up --build
 ```
+
+**Not:** `POSTGRES_PORT` varsayılan `5433` (host). `5432` genelde yerel Postgres veya başka container tarafından dolu olur; backend container içinde yine `db:5432` kullanır.
 
 | Servis | Adres |
 |--------|-------|
@@ -41,10 +43,14 @@ cd frontend && cp .env.example .env
 npm install && npm run dev
 ```
 
+Vite dev: `VITE_API_URL` boş bırakılırsa `/api` otomatik `localhost:5844`'e proxy edilir (docker compose). **8080'de başka servis olabilir** — Pacor API docker'da `5844`, nginx'te `5843`.
+
 | Servis | Adres |
 |--------|-------|
-| API | http://localhost:8080 |
+| API (docker compose) | http://localhost:5844 |
+| UI + API (docker nginx) | http://localhost:5843 |
 | UI (Vite dev) | http://localhost:5173 |
+| API (manuel go run) | http://localhost:8080 — `.env` içinde `VITE_API_URL=http://localhost:8080` |
 | Health | GET /health |
 
 **Test:** `cd backend && go test ./...` · **Build:** `cd frontend && npm run build`
@@ -170,7 +176,11 @@ PIN min 4 hane, bcrypt hash. JWT varsayılan 7 gün (`JWT_EXPIRY_HOURS`).
 - **theme** — sistem açık/koyu tema
 
 ### Önemli bileşenler
-`MealButton` · `StatsModal` · `SettingsModal` · `PlanPicker` · `StatsFab` · `FoodEmojiBackground` · `PacManIcon`
+`MealButton` · `StatsModal` · `SettingsModal` · `PlanPicker` · `StatsFab` · `PacManIcon`
+
+**Arka plan:** `background-9509852_1280.jpg` → web: `frontend/public/background.jpg` (`--bg-image-opacity` ~%12–14, `.page-bg`); iOS: `Assets.xcassets/Background` + `AppPageBackground` (koyu %14, açık %12, gradyan üstü). `FoodEmojiBackground` şimdilik kapalı.
+
+**iOS arka plan layout (önemli):** `AppPageBackground` `RootView`'da `.background { }` ile uygulanır — ZStack kardeşi DEĞİL. Kardeş yapılırsa `.ignoresSafeArea()` ZStack sınırını büyütüp içeriğin güvenli alanını bozar → header (logo/ayarlar) dynamic island altına, FAB ekran dışına kayar. UI'nin geri kalanı orijinal Liquid Glass (`glassPanel` / `glassCircle` / `glassInput`) ile çalışır; bunlara dokunulmadı.
 
 ### API client
 - Dev: `VITE_API_URL` veya `http://localhost:8080`

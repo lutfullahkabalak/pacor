@@ -9,5 +9,12 @@ frontend/.env
 # Docker / env
 .env
 
+# iOS build artifacts
+ios/build/
+ios/build-device/
+ios/DerivedData/
+**/*.xcuserstate
+**/xcuserdata/
+
 # OS
 .DS_Store

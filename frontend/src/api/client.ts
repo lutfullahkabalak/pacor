@@ -1,6 +1,7 @@
-const API_URL = import.meta.env.PROD
-  ? ''
-  : (import.meta.env.VITE_API_URL || 'http://localhost:8080')
+// Prod + Vite dev (proxy): same-origin. Manuel backend için VITE_API_URL set edin.
+const API_URL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? '' : '')
 
 class ApiError extends Error {
   status: number

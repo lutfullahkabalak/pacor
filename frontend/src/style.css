@@ -27,6 +27,7 @@
   --elapsed-text: #e85d72;
   --bg-emoji-opacity: 0.12;
   --bg-emoji-blur: 4px;
+  --bg-image-opacity: 0.14;
 }
 
 [data-theme="dark"] {
@@ -52,6 +53,7 @@
   --elapsed-text: #e85d72;
   --bg-emoji-opacity: 0.12;
   --bg-emoji-blur: 4px;
+  --bg-image-opacity: 0.14;
 }
 
 [data-theme="light"] {
@@ -77,6 +79,7 @@
   --elapsed-text: #c94d62;
   --bg-emoji-opacity: 0.14;
   --bg-emoji-blur: 4px;
+  --bg-image-opacity: 0.12;
 }
 
 body {
@@ -91,6 +94,18 @@ body {
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: var(--bg-image-opacity);
 }
 
 .food-emoji-bg {
